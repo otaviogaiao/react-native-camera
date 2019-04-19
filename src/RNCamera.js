@@ -29,6 +29,8 @@ const requestPermissions = async (
   CameraManager: any,
   androidCameraPermissionOptions: Rationale,
   androidRecordAudioPermissionOptions: Rationale,
+  askForAndroidCameraPermission: boolean,
+  askForAndroidRecordAudioPermission: boolean
 ): Promise<{ hasCameraPermissions: boolean, hasRecordAudioPermissions: boolean }> => {
   let hasCameraPermissions = false;
   let hasRecordAudioPermissions = false;
@@ -36,39 +38,49 @@ const requestPermissions = async (
   if (Platform.OS === 'ios') {
     hasCameraPermissions = await CameraManager.checkVideoAuthorizationStatus();
   } else if (Platform.OS === 'android') {
-    const cameraPermissionResult = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.CAMERA,
-      androidCameraPermissionOptions,
-    );
-    if (typeof cameraPermissionResult === 'boolean') {
-      hasCameraPermissions = cameraPermissionResult;
-    } else {
-      hasCameraPermissions = cameraPermissionResult === PermissionsAndroid.RESULTS.GRANTED;
+    if(askForAndroidCameraPermission) {
+      const cameraPermissionResult = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        androidCameraPermissionOptions,
+      );
+      if (typeof cameraPermissionResult === 'boolean') {
+        hasCameraPermissions = cameraPermissionResult;
+      } else {
+        hasCameraPermissions = cameraPermissionResult === PermissionsAndroid.RESULTS.GRANTED;
+      }
+    }else{ //dont ask for permission
+      hasCameraPermissions = true; //assumes permission was granted
     }
+
   }
 
   if (captureAudio) {
     if (Platform.OS === 'ios') {
       hasRecordAudioPermissions = await CameraManager.checkRecordAudioAuthorizationStatus();
     } else if (Platform.OS === 'android') {
-      if (await CameraManager.checkIfRecordAudioPermissionsAreDefined()) {
-        const audioPermissionResult = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
-          androidRecordAudioPermissionOptions,
-        );
-        if (typeof audioPermissionResult === 'boolean') {
-          hasRecordAudioPermissions = audioPermissionResult;
-        } else {
-          hasRecordAudioPermissions = audioPermissionResult === PermissionsAndroid.RESULTS.GRANTED;
+      if(askForAndroidRecordAudioPermission) {
+        if (await CameraManager.checkIfRecordAudioPermissionsAreDefined()) {
+          const audioPermissionResult = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+            androidRecordAudioPermissionOptions,
+          );
+          if (typeof audioPermissionResult === 'boolean') {
+            hasRecordAudioPermissions = audioPermissionResult;
+          } else {
+            hasRecordAudioPermissions = audioPermissionResult === PermissionsAndroid.RESULTS.GRANTED;
+          }
+        } else if (__DEV__) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `The 'captureAudio' property set on RNCamera instance but 'RECORD_AUDIO' permissions not defined in the applications 'AndroidManifest.xml'. ` +
+              `If you want to record audio you will have to add '<uses-permission android:name="android.permission.RECORD_AUDIO"/>' to your 'AndroidManifest.xml'. ` +
+              `Otherwise you should set the 'captureAudio' property on the component instance to 'false'.`,
+          );
         }
-      } else if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          `The 'captureAudio' property set on RNCamera instance but 'RECORD_AUDIO' permissions not defined in the applications 'AndroidManifest.xml'. ` +
-            `If you want to record audio you will have to add '<uses-permission android:name="android.permission.RECORD_AUDIO"/>' to your 'AndroidManifest.xml'. ` +
-            `Otherwise you should set the 'captureAudio' property on the component instance to 'false'.`,
-        );
+      }else { //dont check for permission
+        hasRecordAudioPermissions = true; //assumes permission was granted before
       }
+
     }
   }
 
@@ -401,6 +413,8 @@ export default class Camera extends React.Component<PropsType, StateType> {
     pictureSize: PropTypes.string,
     mirrorVideo: PropTypes.bool,
     defaultVideoQuality: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    askForAndroidCameraPermission: PropTypes.bool,
+    askForAndroidRecordAudioPermission: PropTypes.bool
   };
 
   static defaultProps: Object = {
@@ -446,6 +460,8 @@ export default class Camera extends React.Component<PropsType, StateType> {
     pictureSize: 'None',
     videoStabilizationMode: 0,
     mirrorVideo: false,
+    askForAndroidCameraPermission: true,
+    askForAndroidRecordAudioPermission: true
   };
 
   _cameraRef: ?Object;

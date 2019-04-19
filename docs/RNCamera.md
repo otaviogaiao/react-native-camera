@@ -281,6 +281,15 @@ Configuration options for permissions request for recording audio. It will be pa
 
 Configuration options for permissions request for camera. It will be passed as `rationale` parameter to [`PermissionsAndroid.request`](https://facebook.github.io/react-native/docs/permissionsandroid#request). This replaces and deprecates old `permissionDialogTitle` and `permissionDialogMessage` parameters.
 
+### `Android` `askForAndroidCameraPermission`
+
+Boolean that when set to false, prevents the Camera component from asking for permission. So you should have asked permission before rendering the component. Use at your own risk. Useful
+to use with ExpoKit. Default to true.
+
+### `Android` `askForAndroidRecordAudioPermission`
+
+Boolean that when set to false, prevents the Camera component from asking for permission for audio recording. So you should have asked permission before rendering the component. Use at your own risk. Useful to use with ExpoKit. Default to true.
+
 #### `notAuthorizedView`
 
 By default a `Camera not authorized` message will be displayed when access to the camera has been denied, if set displays the passed react element instead of the default one.
